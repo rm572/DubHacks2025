@@ -1,0 +1,144 @@
+import streamlit as st
+import requests
+import time
+
+API_URL = "http://localhost:5001"
+WS_URL = "ws://localhost:5001"
+
+st.set_page_config(page_title="Campus Escort", layout="centered")
+st.title("🚗 Campus Escort - Request a Ride")
+
+if "ride_requested" not in st.session_state:
+    st.session_state.ride_requested = False
+    st.session_state.uw_id = ""
+    st.session_state.destination = ""
+    st.session_state.pickup = ""
+    st.session_state.notes = ""
+    st.session_state.rideID = ""
+    st.session_state.status_data = {}
+
+if not st.session_state.ride_requested:
+    st.subheader("📝 Enter Your Details")
+    
+    name = st.text_input("Your Name")
+    uw_id = st.text_input("UW NetID")
+    pickup = st.text_input("Pickup Address")
+    destination = st.text_input("Destination Address")
+    notes = st.text_area("Notes (optional)")
+    
+    if "confirmed" not in st.session_state:
+        st.session_state.confirmed = False
+    
+    if st.button("Preview Ride"):
+        st.session_state.confirmed = True
+    
+    if st.session_state.confirmed:
+        st.markdown("### ✅ Confirm Your Ride Details:")
+        st.write(f"**Name:** {name}")
+        st.write(f"**UW NetID:** {uw_id}")
+        st.write(f"**Pickup:** {pickup}")
+        st.write(f"**Destination:** {destination}")
+        if notes:
+            st.write(f"**Notes:** {notes}")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("🚀 Request Ride"):
+                with st.spinner("Requesting ride..."):
+                    res = requests.post(f"{API_URL}/request_ride", json={
+                        "name": name,
+                        "uw_id": uw_id,
+                        "pickup_address": pickup,
+                        "destination_address": destination,
+                        "notes": notes
+                    })
+                    
+                    if res.ok:
+                        ride = res.json()
+                        st.session_state.rideID = ride["ride_id"]
+                        st.session_state.uw_id = uw_id
+                        st.session_state.destination = destination
+                        st.session_state.pickup = pickup
+                        st.session_state.notes = notes
+                        st.session_state.ride_requested = True
+                        st.session_state.confirmed = False
+                        st.success("✅ Ride requested!")
+                        time.sleep(1)
+                        st.rerun()
+                    else:
+                        st.error("❌ Failed to request ride")
+        
+        with col2:
+            if st.button("Cancel"):
+                st.session_state.confirmed = False
+                st.warning("Cancelled.")
+
+else:
+    # Ride tracking screen
+    st.subheader("📍 Tracking Your Ride")
+    
+    col_info, col_status = st.columns([2, 1])
+    
+    with col_info:
+        st.write(f"**From:** {st.session_state.pickup}")
+        st.write(f"**To:** {st.session_state.destination}")
+        st.write(f"**Ride ID:** {st.session_state.rideID}")
+    
+    # Fetch current status
+    res = requests.get(f"{API_URL}/client_status/{st.session_state.rideID}")
+    
+    if res.ok:
+        status = res.json()
+        
+        if status.get("error"):
+            st.error(f"❌ {status['error']}")
+        else:
+            # Status indicator
+            if status["status"] == "waiting":
+                st.warning(f"⏳ Waiting for driver assignment")
+                st.write(f"**Queue Position:** {status['queue_position']}")
+                st.write(f"**Estimated Wait:** {status['eta']}")
+                
+                # Auto-refresh every 3 seconds
+                placeholder = st.empty()
+                with placeholder.container():
+                    st.info("Refreshing in 3 seconds...")
+                time.sleep(3)
+                st.rerun()
+            
+            elif status["status"] == "in_car":
+                st.success("🚗 Driver on the way!")
+                
+                if status.get("driver_location"):
+                    col_loc, col_eta = st.columns(2)
+                    with col_loc:
+                        st.metric("Driver Location", 
+                                f"{status['driver_location']['lat']:.4f}, {status['driver_location']['lon']:.4f}")
+                    with col_eta:
+                        st.metric("ETA", status['eta'])
+                
+                st.write(f"**Driver ID:** {status.get('driver_id', 'N/A')}")
+                
+                # Auto-refresh every 2 seconds for live updates
+                placeholder = st.empty()
+                with placeholder.container():
+                    st.info("Live tracking active... refreshing in 2 seconds")
+                time.sleep(2)
+                st.rerun()
+            
+            elif status["status"] == "completed":
+                st.success("✅ Ride completed! Thanks for using Campus Escort.")
+            
+            else:
+                st.info(f"Status: {status['status']}")
+    else:
+        st.error("❌ Failed to fetch ride status")
+    
+    # Cancel ride button
+    if st.button("Cancel Ride Request"):
+        st.session_state.ride_requested = False
+        st.session_state.confirmed = False
+        st.warning("Ride request cancelled")
+        time.sleep(1)
+        st.rerun()
