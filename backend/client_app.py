@@ -2,6 +2,8 @@ import streamlit as st
 import requests
 import time
 import bedrock as br
+from geopy.geocoders import Nominatim, Photon
+
 
 API_URL = "http://10.18.189.186:5001"
 WS_URL = "ws://10.18.189.186:5001"
@@ -62,10 +64,16 @@ if not st.session_state.ride_requested:
     #     st.session_state.confirmed = True
     
     if st.session_state.confirmed:
-        user_pickup = br.parse_ride_request(pickup_text)
-        user_destination = br.parse_ride_request(destination_text)
-        pickup = user_pickup["location"]
-        destination = user_destination["location"]
+        user_pickup = br.parse_ride_request(pickup_text)["location"]
+        user_destination = br.parse_ride_request(destination_text)["location"]
+        # pickup = user_pickup["location"]
+        # destination = user_destination["location"]
+
+        geolocator = Photon(user_agent="campus-pickup")
+        if user_destination is not None and user_pickup is not None:
+            destination = geolocator.geocode(f"{user_destination}, Seattle, WA", exactly_one=True)
+            pickup = geolocator.geocode(f"{user_pickup}, Seattle, WA", exactly_one=True)
+
         st.markdown("### ✅ Confirm Your Ride Details:")
         st.write(f"**Name:** {name}")
         st.write(f"**UW NetID:** {uw_id}")
