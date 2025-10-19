@@ -21,7 +21,7 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
-st.title("🚗 DriveHusky - Request a Ride")
+st.title("DriveHusky - Request a Ride")
 
 
 if "ride_requested" not in st.session_state:
@@ -79,16 +79,17 @@ if not st.session_state.ride_requested:
         # destination = user_destination["location"]
 
         geolocator = Nominatim(user_agent="campus-pickup")
+        viewbox = (47.648546, -122.333540, 47.682512, -122.270640)
         if user_destination is not None and user_pickup is not None:
-            destination_address = str(geolocator.geocode(f"{destination}, Seattle, WA", exactly_one=True), timeout=10)
-            pickup_address = str(geolocator.geocode(f"{pickup}, Seattle, WA", exactly_one=True), timeout=10)
+            destination_address = str(geolocator.geocode(f"{destination}, Seattle, WA", exactly_one=True, viewbox=viewbox, bounded=True))
+            pickup_address = geolocator.geocode(f"{pickup}, Seattle, WA", exactly_one=True, viewbox=viewbox, bounded=True)
 
             # st.write(str(pickup_address))
             # destination = db.geocode(user_destination)
             # pickup = db.geocode(user_pickup)
 
 
-        st.markdown("### ✅ Confirm Your Ride Details:")
+        st.markdown("### Confirm Your Ride Details:")
         st.write(f"**Name:** {name}")
         st.write(f"**UW NetID:** {uw_id}")
         st.write(f"**Pickup:** {str(pickup_address)}")
@@ -117,7 +118,7 @@ if not st.session_state.ride_requested:
                             st.session_state.rideID = ride["ride_id"]
                             st.session_state.uw_id = uw_id
                             st.session_state.destination = destination
-                            st.session_state.pickup = pickup
+                            st.session_state.pickup = str(pickup)
                             st.session_state.notes = notes
                             st.session_state.ride_requested = True
                             st.session_state.confirmed = False
@@ -136,7 +137,7 @@ if not st.session_state.ride_requested:
 
 else:
     # Ride tracking screen
-    st.subheader("📍 Tracking Your Ride")
+    st.subheader("Tracking Your Ride")
     
     col_info, col_status = st.columns([2, 1])
     
@@ -156,7 +157,7 @@ else:
         else:
             # Status indicator
             if status["status"] == "waiting":
-                st.warning(f"⏳ Waiting for driver assignment")
+                st.warning(f"Waiting for driver assignment")
                 st.write(f"**Queue Position:** {status['queue_position']}")
                 st.write(f"**Estimated Wait:** {status['eta']}")
                 
@@ -176,7 +177,7 @@ else:
                 st.rerun()
             
             elif status["status"] == "in_car":
-                st.success("🚗 Driver on the way!")
+                st.success("Driver on the way!")
                 
                 if status.get("driver_location"):
                     col_loc, col_eta = st.columns(2)

@@ -51,7 +51,7 @@ def get_browser_location():
         </style>
     </head>
     <body>
-        <div id="status">📍 Requesting location permission...</div>
+        <div id="status">Requesting location permission...</div>
         <button onclick="forceUpdate()">Update Location Now</button>
         
         <script>
@@ -97,7 +97,7 @@ def get_browser_location():
                     
                     document.getElementById('status').className = 'success';
                     document.getElementById('status').innerHTML = 
-                        '✅ <strong>Live tracking active</strong>' +
+                        '<strong>Live tracking active</strong>' +
                         '<div class="coords">Lat: ' + lat.toFixed(6) + '</div>' +
                         '<div class="coords">Lon: ' + lon.toFixed(6) + '</div>' +
                         '<div class="coords">Accuracy: ±' + accuracy.toFixed(0) + 'm</div>' +
@@ -136,7 +136,7 @@ def get_browser_location():
                     
                     document.getElementById('status').className = 'success';
                     document.getElementById('status').innerHTML = 
-                        '✅ Location updated manually!';
+                        'Location updated manually!';
                 },
                 function(error) {
                     document.getElementById('status').className = 'error';
@@ -192,7 +192,7 @@ def get_browser_location():
     return lat, lon
 
 st.set_page_config(page_title="Driver Dashboard", layout="wide")
-st.title("🚗 Driver Dashboard")
+st.title("Driver Dashboard")
 
 if "driver_id" not in st.session_state:
     st.session_state.driver_id = ""
@@ -272,9 +272,9 @@ if st.session_state.checked_in:
                     st.write(f"**To:** {ride['destination']['address']}")
                     st.write(f"**Notes:** {ride.get('notes', 'N/A')}")
                 
-                st.info("📍 Your live location is being sent to the passenger automatically")
+                st.info("Your live location is being sent to the passenger automatically")
                 
-                if st.button("✅ Complete Ride"):
+                if st.button("Complete Ride"):
                     res = requests.post(f"{API_URL}/complete_ride/{ride['ride_id']}")
                     if res.ok:
                         st.success("Ride completed!")
@@ -311,7 +311,7 @@ if st.session_state.checked_in:
     with col2:
         st.subheader("Stats")
         st.metric("Driver ID", driver_id)
-        st.metric("Status", "🟢 On Duty")
+        st.metric("Status", "On Duty")
         st.metric("Location Updates", "Live")
         
         if st.button("Check Out"):

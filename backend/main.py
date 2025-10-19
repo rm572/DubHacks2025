@@ -66,7 +66,7 @@ def client_status(ride_id: str):
         if position is None:
             return {"error": "Ride not in queue"}
 
-        # 1️⃣ Find a driver to base the ETA on
+        # Find a driver to base the ETA on
         # (Here we just pick the *first available driver* — you might want smarter assignment logic)
         drivers = get_all_drivers()
         available_drivers = [d for d in drivers if d.get("available", True)]
@@ -79,7 +79,7 @@ def client_status(ride_id: str):
         total_eta_seconds = 0
         current_point = current_latlon
 
-        # 2️⃣ Go through each ride ahead in the queue, accumulating:
+        # Go through each ride ahead in the queue, accumulating:
         # driver → pickup → destination
         for r in rides[:position]:
             # Driver to this pickup
@@ -95,7 +95,7 @@ def client_status(ride_id: str):
             # Update the current point to this dropoff
             current_point = r["destination"]
 
-        # 3️⃣ Finally, add ETA from last dropoff to this ride’s pickup
+        # Finally, add ETA from last dropoff to this ride’s pickup
         m3, s3 = calculate_route_minutes_seconds(current_point, ride["pickup"])
         if m3 is not None:
             total_eta_seconds += m3 * 60 + s3
