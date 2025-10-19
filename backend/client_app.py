@@ -21,7 +21,7 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
-st.title("DriveHusky - Request a Ride")
+st.title("HuskyDrive - Request a Ride")
 
 
 if "ride_requested" not in st.session_state:
