@@ -78,17 +78,19 @@ if not st.session_state.ride_requested:
         # pickup = user_pickup["location"]
         # destination = user_destination["location"]
 
-        geolocator = Photon(user_agent="campus-pickup")
+        geolocator = Nominatim(user_agent="campus-pickup")
+        viewbox = [(47.648546, -122.333540), (47.682512, -122.270640)]
+
         if user_destination is not None and user_pickup is not None:
-            destination_address = str(geolocator.geocode(f"{destination}, Seattle, WA", exactly_one=True))
-            pickup_address = geolocator.geocode(f"{pickup}, Seattle, WA", exactly_one=True)
+            destination_address = str(geolocator.geocode(f"{destination}, Seattle, WA", exactly_one=True, viewbox=viewbox, bounded=True))
+            pickup_address = geolocator.geocode(f"{pickup}, Seattle, WA", exactly_one=True, viewbox=viewbox, bounded=True)
             
             # st.write(str(pickup_address))
             # destination = db.geocode(user_destination)
             # pickup = db.geocode(user_pickup)
 
 
-        st.markdown("### ✅ Confirm Your Ride Details:")
+        st.markdown("###Confirm Your Ride Details:")
         st.write(f"**Name:** {name}")
         st.write(f"**UW NetID:** {uw_id}")
         st.write(f"**Pickup:** {str(pickup_address)}")
@@ -117,7 +119,7 @@ if not st.session_state.ride_requested:
                             st.session_state.rideID = ride["ride_id"]
                             st.session_state.uw_id = uw_id
                             st.session_state.destination = destination
-                            st.session_state.pickup = pickup
+                            st.session_state.pickup = str(pickup)
                             st.session_state.notes = notes
                             st.session_state.ride_requested = True
                             st.session_state.confirmed = False
