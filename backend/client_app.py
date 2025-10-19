@@ -3,6 +3,7 @@ import requests
 import time
 import bedrock as br
 from geopy.geocoders import Nominatim, Photon
+import db
 
 API_URL = "http://10.18.189.186:5001"
 WS_URL = "ws://10.18.189.186:5001"
@@ -20,7 +21,7 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
-st.title("🚗 Campus Escort - Request a Ride")
+st.title("🚗 DriveHusky - Request a Ride")
 
 
 if "ride_requested" not in st.session_state:
@@ -33,7 +34,7 @@ if "ride_requested" not in st.session_state:
     st.session_state.status_data = {}
 
 if not st.session_state.ride_requested:
-    st.subheader("📝 Enter Your Details")
+    st.subheader("Enter Your Details")
 
     with st.form("ride_form"):
         name = st.text_input("Your Name")
@@ -68,22 +69,30 @@ if not st.session_state.ride_requested:
         pickup = user_pickup["location"]
         destination = user_destination["location"]
 
+        pickup_address = pickup
+        
+        destination_address = destination
+
         # user_pickup = br.parse_ride_request(pickup_text)["location"]
         # user_destination = br.parse_ride_request(destination_text)["location"]
-        # # pickup = user_pickup["location"]
-        # # destination = user_destination["location"]
+        # pickup = user_pickup["location"]
+        # destination = user_destination["location"]
 
-        # geolocator = Photon(user_agent="campus-pickup")
-        # if user_destination is not None and user_pickup is not None:
-        #     destination = geolocator.geocode(f"{user_destination}, Seattle, WA", exactly_one=True)
-        #     pickup = geolocator.geocode(f"{user_pickup}, Seattle, WA", exactly_one=True)
+        geolocator = Photon(user_agent="campus-pickup")
+        if user_destination is not None and user_pickup is not None:
+            destination_address = str(geolocator.geocode(f"{destination}, Seattle, WA", exactly_one=True))
+            pickup_address = geolocator.geocode(f"{pickup}, Seattle, WA", exactly_one=True)
+            
+            # st.write(str(pickup_address))
+            # destination = db.geocode(user_destination)
+            # pickup = db.geocode(user_pickup)
 
 
         st.markdown("### ✅ Confirm Your Ride Details:")
         st.write(f"**Name:** {name}")
         st.write(f"**UW NetID:** {uw_id}")
-        st.write(f"**Pickup:** {pickup}")
-        st.write(f"**Destination:** {destination}")
+        st.write(f"**Pickup:** {str(pickup_address)}")
+        st.write(f"**Destination:** {destination_address}")
         if notes:
             st.write(f"**Notes:** {notes}")
     
@@ -98,8 +107,8 @@ if not st.session_state.ride_requested:
                         res = requests.post(f"{API_URL}/request_ride", json={
                             "name": name,
                             "uw_id": uw_id,
-                            "pickup_address": pickup,
-                            "destination_address": destination,
+                            "pickup_address": str(pickup_address),
+                            "destination_address": destination_address,
                             "notes": notes
                         })
                         
@@ -116,7 +125,7 @@ if not st.session_state.ride_requested:
                             time.sleep(1)
                             st.rerun()
                         else:
-                            st.error("❌ Failed to request ride")
+                            st.error("Failed to request ride")
             
             with col2:
                 if st.button("Cancel"):
@@ -143,19 +152,27 @@ else:
         status = res.json()
         
         if status.get("error"):
-            st.error(f"❌ {status['error']}")
+            st.error(f"{status['error']}")
         else:
             # Status indicator
             if status["status"] == "waiting":
                 st.warning(f"⏳ Waiting for driver assignment")
                 st.write(f"**Queue Position:** {status['queue_position']}")
-                st.write(f"**Estimated Wait:** {status['eta']}")
+                # st.write(f"**Estimated Wait:** {status['eta']}")
                 
                 # Auto-refresh every 3 seconds
                 placeholder = st.empty()
                 with placeholder.container():
-                    st.info("Refreshing in 3 seconds...")
-                time.sleep(3)
+                    st.info("Refreshing in 5 seconds...")
+                # Cancel ride button
+                # if st.button("Cancel Ride Request"):
+                #     st.session_state.ride_requested = False
+                #     st.session_state.confirmed = False
+                #     st.warning("Ride request cancelled")
+                              
+                #     time.sleep(1)
+                #     st.rerun()                    
+                time.sleep(5)
                 st.rerun()
             
             elif status["status"] == "in_car":
@@ -174,8 +191,15 @@ else:
                 # Auto-refresh every 2 seconds for live updates
                 placeholder = st.empty()
                 with placeholder.container():
-                    st.info("Live tracking active... refreshing in 2 seconds")
-                time.sleep(2)
+                    st.info("Live tracking active... refreshing in 5 seconds")
+                # # Cancel ride button
+                # if st.button("Cancel Ride Request"):
+                #     st.session_state.ride_requested = False
+                #     st.session_state.confirmed = False
+                #     st.warning("Ride request cancelled")
+                #     time.sleep(1)
+                #     st.rerun()                       
+                time.sleep(5)
                 st.rerun()
             
             elif status["status"] == "completed":
@@ -184,12 +208,5 @@ else:
             else:
                 st.info(f"Status: {status['status']}")
     else:
-        st.error("❌ Failed to fetch ride status")
+        st.error("Failed to fetch ride status")
     
-    # Cancel ride button
-    if st.button("Cancel Ride Request"):
-        st.session_state.ride_requested = False
-        st.session_state.confirmed = False
-        st.warning("Ride request cancelled")
-        time.sleep(1)
-        st.rerun()

@@ -52,7 +52,7 @@ def get_browser_location():
     </head>
     <body>
         <div id="status">📍 Requesting location permission...</div>
-        <button onclick="forceUpdate()">🔄 Update Location Now</button>
+        <button onclick="forceUpdate()">Update Location Now</button>
         
         <script>
         let watchId = null;
@@ -77,7 +77,7 @@ def get_browser_location():
             if (!navigator.geolocation) {
                 document.getElementById('status').className = 'error';
                 document.getElementById('status').innerHTML = 
-                    '❌ Geolocation not supported on this device';
+                    'Geolocation not supported on this device';
                 return;
             }
             
@@ -108,13 +108,13 @@ def get_browser_location():
                     let errorMsg = '';
                     switch(error.code) {
                         case error.PERMISSION_DENIED:
-                            errorMsg = '❌ Location access denied. Please enable in browser settings.';
+                            errorMsg = 'Location access denied. Please enable in browser settings.';
                             break;
                         case error.POSITION_UNAVAILABLE:
-                            errorMsg = '❌ Location unavailable. Check GPS/internet connection.';
+                            errorMsg = 'Location unavailable. Check GPS/internet connection.';
                             break;
                         case error.TIMEOUT:
-                            errorMsg = '⚠️ Location request timed out. Retrying...';
+                            errorMsg = 'Location request timed out. Retrying...';
                             break;
                     }
                     document.getElementById('status').className = 'error';
@@ -125,7 +125,7 @@ def get_browser_location():
         }
         
         function forceUpdate() {
-            document.getElementById('status').innerHTML = '🔄 Updating location...';
+            document.getElementById('status').innerHTML = 'Updating location...';
             navigator.geolocation.getCurrentPosition(
                 function(position) {
                     const lat = position.coords.latitude;
@@ -141,7 +141,7 @@ def get_browser_location():
                 function(error) {
                     document.getElementById('status').className = 'error';
                     document.getElementById('status').innerHTML = 
-                        '❌ Failed to get location';
+                        'Failed to get location';
                 },
                 { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
             );
@@ -219,7 +219,7 @@ if st.session_state.checked_in:
     driver_id = st.session_state.driver_id
     
     # Get current location from browser
-    st.subheader("📍 Your Location")
+    st.subheader("Your Location")
     lat, lon = get_browser_location()
     
     # Send location update to backend every 5 seconds
@@ -252,7 +252,7 @@ if st.session_state.checked_in:
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        st.subheader("📋 Available Rides")
+        st.subheader("Available Rides")
         if st.button("Refresh Queue"):
             st.rerun()
         
@@ -262,7 +262,7 @@ if st.session_state.checked_in:
             
             # Current ride section
             if data["current_ride"]:
-                st.success("🚕 Current Ride Assigned")
+                st.success("Current Ride Assigned")
                 ride = data["current_ride"]
                 col_ride1, col_ride2 = st.columns(2)
                 with col_ride1:
@@ -294,7 +294,7 @@ if st.session_state.checked_in:
                             st.write(f"**{i}. {ride['name']}**")
                             st.caption(f"{ride['pickup']['address']} → {ride['destination']['address']}")
                         with col_q2:
-                            st.write(f"📝 {ride.get('notes', '')}")
+                            st.write(f"{ride.get('notes', '')}")
                         with col_q3:
                             if st.button("Accept", key=f"accept_{ride['ride_id']}"):
                                 res = requests.post(
@@ -309,10 +309,10 @@ if st.session_state.checked_in:
                 st.write("No rides waiting")
     
     with col2:
-        st.subheader("📊 Stats")
+        st.subheader("Stats")
         st.metric("Driver ID", driver_id)
         st.metric("Status", "🟢 On Duty")
-        st.metric("Location Updates", "🔄 Live")
+        st.metric("Location Updates", "Live")
         
         if st.button("Check Out"):
             st.session_state.checked_in = False
@@ -326,4 +326,4 @@ if st.session_state.checked_in:
     st.rerun()
     
 else:
-    st.info("👈 Enter your Driver ID in the sidebar to get started")
+    st.info("Enter your Driver ID in the sidebar to get started")

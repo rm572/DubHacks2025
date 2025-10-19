@@ -107,7 +107,7 @@ def update_ride_status(ride_id, status, driver_id=None):
 
 def calculate_route_minutes_seconds(pickup, destination):
     try:
-        print("🔍 Calculating route...")
+        print("Calculating route...")
         print("Pickup:", pickup)
         print("Destination:", destination)
 
@@ -136,10 +136,10 @@ def calculate_route_minutes_seconds(pickup, destination):
             print(f"✅ ETA: {minutes} min {seconds} sec")
             return minutes, seconds
         else:
-            print("⚠️ No route found in response structure.")
+            print("No route found in response structure.")
     except Exception as e:
-        print("❌ Route calculation error:", e)
-        print("⚠️ Using fallback estimate: 5 minutes")
+        print("Route calculation error:", e)
+        print("Using fallback estimate: 5 minutes")
         return 5, 0
 
     return 5, 0  # Fallback if route calculation fails
