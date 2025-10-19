@@ -21,7 +21,7 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
-st.title("🚗 DriveHusky - Request a Ride")
+st.title("DriveHusky - Request a Ride")
 
 
 if "ride_requested" not in st.session_state:
@@ -90,7 +90,7 @@ if not st.session_state.ride_requested:
             # pickup = db.geocode(user_pickup)
 
 
-        st.markdown("###Confirm Your Ride Details:")
+        st.markdown("### Confirm Your Ride Details:")
         st.write(f"**Name:** {name}")
         st.write(f"**UW NetID:** {uw_id}")
         st.write(f"**Pickup:** {str(pickup_address)}")
@@ -138,7 +138,7 @@ if not st.session_state.ride_requested:
 
 else:
     # Ride tracking screen
-    st.subheader("📍 Tracking Your Ride")
+    st.subheader("Tracking Your Ride")
     
     col_info, col_status = st.columns([2, 1])
     
@@ -158,9 +158,9 @@ else:
         else:
             # Status indicator
             if status["status"] == "waiting":
-                st.warning(f"⏳ Waiting for driver assignment")
+                st.warning(f"Waiting for driver assignment")
                 st.write(f"**Queue Position:** {status['queue_position']}")
-                # st.write(f"**Estimated Wait:** {status['eta']}")
+                st.write(f"**Estimated Wait:** {status['eta']}")
                 
                 # Auto-refresh every 3 seconds
                 placeholder = st.empty()
@@ -178,7 +178,7 @@ else:
                 st.rerun()
             
             elif status["status"] == "in_car":
-                st.success("🚗 Driver on the way!")
+                st.success("Driver on the way!")
                 
                 if status.get("driver_location"):
                     col_loc, col_eta = st.columns(2)

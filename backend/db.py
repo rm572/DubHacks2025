@@ -127,13 +127,13 @@ def calculate_route_minutes_seconds(pickup, destination):
             eta_seconds = int(leg["DurationSeconds"])
             minutes = eta_seconds // 60
             seconds = eta_seconds % 60
-            print(f"✅ ETA: {minutes} min {seconds} sec")
+            print(f"ETA: {minutes} min {seconds} sec")
             return minutes, seconds
         elif "Summary" in response:
             eta_seconds = int(response["Summary"]["DurationSeconds"])
             minutes = eta_seconds // 60
             seconds = eta_seconds % 60
-            print(f"✅ ETA: {minutes} min {seconds} sec")
+            print(f"ETA: {minutes} min {seconds} sec")
             return minutes, seconds
         else:
             print("No route found in response structure.")
