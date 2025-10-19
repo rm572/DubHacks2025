@@ -1,12 +1,26 @@
 import streamlit as st
 import requests
 import time
+import bedrock as br
 
 API_URL = "http://localhost:5001"
 WS_URL = "ws://localhost:5001"
 
 st.set_page_config(page_title="Campus Escort", layout="centered")
+st.markdown("""
+    <style>
+    .stTextInput > div > div > input {
+        font-size: 18px;
+        padding: 10px;
+    }
+    .stTextArea textarea {
+        font-size: 16px;
+        padding: 10px;
+    }
+    </style>
+""", unsafe_allow_html=True)
 st.title("🚗 Campus Escort - Request a Ride")
+
 
 if "ride_requested" not in st.session_state:
     st.session_state.ride_requested = False
@@ -19,20 +33,39 @@ if "ride_requested" not in st.session_state:
 
 if not st.session_state.ride_requested:
     st.subheader("📝 Enter Your Details")
+
+    with st.form("ride_form"):
+        name = st.text_input("Your Name")
+        uw_id = st.text_input("UW NetID")
+        # chat = st.text_input("Where would you like to be picked up and dropped off today?")
+        pickup_text = st.text_input("Pickup Address")
+        destination_text = st.text_input("Destination Address")
+        notes = st.text_area("Notes (optional)")
+        
+        if "confirmed" not in st.session_state:
+            st.session_state.confirmed = False
+        
+        if st.form_submit_button("Preview Ride"):
+            st.session_state.confirmed = True    
     
-    name = st.text_input("Your Name")
-    uw_id = st.text_input("UW NetID")
-    pickup = st.text_input("Pickup Address")
-    destination = st.text_input("Destination Address")
-    notes = st.text_area("Notes (optional)")
+    # name = st.text_input("Your Name")
+    # uw_id = st.text_input("UW NetID")
+    # chat = st.text_input("Where would you like to be picked up and dropped off today?")
+    # # pickup = st.text_input("Pickup Address")
+    # # destination = st.text_input("Destination Address")
+    # notes = st.text_area("Notes (optional)")
     
-    if "confirmed" not in st.session_state:
-        st.session_state.confirmed = False
+    # if "confirmed" not in st.session_state:
+    #     st.session_state.confirmed = False
     
-    if st.button("Preview Ride"):
-        st.session_state.confirmed = True
+    # if st.button("Preview Ride"):
+    #     st.session_state.confirmed = True
     
     if st.session_state.confirmed:
+        user_pickup = br.parse_ride_request(pickup_text)
+        user_destination = br.parse_ride_request(destination_text)
+        pickup = user_pickup["location"]
+        destination = user_destination["location"]
         st.markdown("### ✅ Confirm Your Ride Details:")
         st.write(f"**Name:** {name}")
         st.write(f"**UW NetID:** {uw_id}")
@@ -40,39 +73,44 @@ if not st.session_state.ride_requested:
         st.write(f"**Destination:** {destination}")
         if notes:
             st.write(f"**Notes:** {notes}")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            if st.button("🚀 Request Ride"):
-                with st.spinner("Requesting ride..."):
-                    res = requests.post(f"{API_URL}/request_ride", json={
-                        "name": name,
-                        "uw_id": uw_id,
-                        "pickup_address": pickup,
-                        "destination_address": destination,
-                        "notes": notes
-                    })
-                    
-                    if res.ok:
-                        ride = res.json()
-                        st.session_state.rideID = ride["ride_id"]
-                        st.session_state.uw_id = uw_id
-                        st.session_state.destination = destination
-                        st.session_state.pickup = pickup
-                        st.session_state.notes = notes
-                        st.session_state.ride_requested = True
-                        st.session_state.confirmed = False
-                        st.success("✅ Ride requested!")
-                        time.sleep(1)
-                        st.rerun()
-                    else:
-                        st.error("❌ Failed to request ride")
-        
-        with col2:
-            if st.button("Cancel"):
-                st.session_state.confirmed = False
-                st.warning("Cancelled.")
+    
+        if pickup == None or destination == None:
+            st.error("Pickup or dropoff is invalid")
+        else:
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                if st.button("Request Ride"):
+                    with st.spinner("Requesting ride..."):
+                        res = requests.post(f"{API_URL}/request_ride", json={
+                            "name": name,
+                            "uw_id": uw_id,
+                            "pickup_address": pickup,
+                            "destination_address": destination,
+                            "notes": notes
+                        })
+                        
+                        if res.ok:
+                            ride = res.json()
+                            st.session_state.rideID = ride["ride_id"]
+                            st.session_state.uw_id = uw_id
+                            st.session_state.destination = destination
+                            st.session_state.pickup = pickup
+                            st.session_state.notes = notes
+                            st.session_state.ride_requested = True
+                            st.session_state.confirmed = False
+                            st.success("✅ Ride requested!")
+                            time.sleep(1)
+                            st.rerun()
+                        else:
+                            st.error("❌ Failed to request ride")
+            
+            with col2:
+                if st.button("Cancel"):
+                    st.session_state.confirmed = False
+                    st.warning("Cancelled.")
+                    st.session_state.ride_requested = False            
+                    st.rerun()
 
 else:
     # Ride tracking screen
