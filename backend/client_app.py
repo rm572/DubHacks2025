@@ -79,10 +79,10 @@ if not st.session_state.ride_requested:
         # destination = user_destination["location"]
 
         geolocator = Nominatim(user_agent="campus-pickup")
-        viewbox = (47.648546, -122.333540, 47.682512, -122.270640)
+        viewbox = [(47.648546, -122.333540), (47.682512, -122.270640)]
         if user_destination is not None and user_pickup is not None:
-            destination_address = str(geolocator.geocode(f"{destination}, Seattle, WA", exactly_one=True, viewbox=viewbox, bounded=True))
-            pickup_address = geolocator.geocode(f"{pickup}, Seattle, WA", exactly_one=True, viewbox=viewbox, bounded=True)
+            destination_address = str(geolocator.geocode(f"{destination}, Seattle, WA", exactly_one=True, viewbox=viewbox, bounded=True, timeout=10))
+            pickup_address = geolocator.geocode(f"{pickup}, Seattle, WA", exactly_one=True, viewbox=viewbox, bounded=True, timeout=10)
 
             # st.write(str(pickup_address))
             # destination = db.geocode(user_destination)
