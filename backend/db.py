@@ -66,7 +66,6 @@ def reverse_geocode(lat, lon):
 # Ride Functions
 # ----------------------------
 def create_ride(name, uw_id, pickup, destination, notes=""):
-    # ride_id = str(uuid4())
     ride_id = uw_id  # Use UW NetID as ride_id
     ride_item = {
         "ride_id": ride_id,
@@ -106,8 +105,6 @@ def update_ride_status(ride_id, status, driver_id=None):
         ExpressionAttributeValues=expr_values
     )
 
-
-
 def calculate_route_minutes_seconds(pickup, destination):
     try:
         print("🔍 Calculating route...")
@@ -117,12 +114,22 @@ def calculate_route_minutes_seconds(pickup, destination):
         response = location_client.calculate_route(
             CalculatorName=ROUTE_CALCULATOR,
             DeparturePosition=[float(pickup["lon"]), float(pickup["lat"])],
-            DestinationPosition=[float(destination["lon"]), float(destination["lat"])]
+            DestinationPosition=[float(destination["lon"]), float(destination["lat"])],
+            TravelMode="Car",
+            DistanceUnit="Kilometers",
+            IncludeLegGeometry=False
         )
         print("🛰️ Full route response:", response)
 
-        # FIX: Check for 'Legs' and 'Summary' instead of 'Routes'
-        if "Legs" in response and "Summary" in response:
+        # Check for 'Legs' in response
+        if "Legs" in response and response["Legs"]:
+            leg = response["Legs"][0]
+            eta_seconds = int(leg["DurationSeconds"])
+            minutes = eta_seconds // 60
+            seconds = eta_seconds % 60
+            print(f"✅ ETA: {minutes} min {seconds} sec")
+            return minutes, seconds
+        elif "Summary" in response:
             eta_seconds = int(response["Summary"]["DurationSeconds"])
             minutes = eta_seconds // 60
             seconds = eta_seconds % 60
@@ -132,12 +139,10 @@ def calculate_route_minutes_seconds(pickup, destination):
             print("⚠️ No route found in response structure.")
     except Exception as e:
         print("❌ Route calculation error:", e)
+        print("⚠️ Using fallback estimate: 5 minutes")
+        return 5, 0
 
-    return None, None
-
-
-
-
+    return 5, 0  # Fallback if route calculation fails
 
 # ----------------------------
 # Driver Functions
@@ -171,6 +176,7 @@ def assign_next_ride():
             driver = drivers.pop(0)
             update_ride_status(ride["ride_id"], "in_car", driver["driver_id"])
             update_driver_location(driver["driver_id"], driver["lat"], driver["lon"], available=False, current_ride_id=ride["ride_id"])
+
 def get_ride_by_id(ride_id):
     """Fetch a specific ride from DynamoDB"""
     try:

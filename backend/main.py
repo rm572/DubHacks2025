@@ -1,3 +1,4 @@
+
 from fastapi import FastAPI, APIRouter, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -58,36 +59,54 @@ def client_status(ride_id: str):
     if not ride:
         return {"error": "Ride not found"}
 
-    # Get all waiting rides to calculate position
+    # Get all waiting rides in queue order
     rides = [r for r in get_all_rides() if r["status"] == "waiting"]
-    
     if ride["status"] == "waiting":
         position = next((i for i, r in enumerate(rides) if r["ride_id"] == ride_id), None)
         if position is None:
             return {"error": "Ride not in queue"}
-        
+
+        # 1️⃣ Find a driver to base the ETA on
+        # (Here we just pick the *first available driver* — you might want smarter assignment logic)
+        drivers = get_all_drivers()
+        available_drivers = [d for d in drivers if d.get("available", True)]
+        if not available_drivers:
+            return {"error": "No drivers available"}
+
+        driver = available_drivers[0]  # For now, just take the first one
+        current_latlon = {"lat": float(driver["lat"]), "lon": float(driver["lon"])}
+
         total_eta_seconds = 0
-        
-        # Add time for all rides ahead
+        current_point = current_latlon
+
+        # 2️⃣ Go through each ride ahead in the queue, accumulating:
+        # driver → pickup → destination
         for r in rides[:position]:
-            m, s = calculate_route_minutes_seconds(r["pickup"], r["destination"])
-            if m is not None:
-                total_eta_seconds += m * 60 + s
-        
-        # Add travel time from previous ride's destination to this ride's pickup
-        if position > 0:
-            last = rides[position - 1]
-            m, s = calculate_route_minutes_seconds(last["destination"], ride["pickup"])
-            if m is not None:
-                total_eta_seconds += m * 60 + s
-        
+            # Driver to this pickup
+            m1, s1 = calculate_route_minutes_seconds(current_point, r["pickup"])
+            if m1 is not None:
+                total_eta_seconds += m1 * 60 + s1
+
+            # Pickup to this destination
+            m2, s2 = calculate_route_minutes_seconds(r["pickup"], r["destination"])
+            if m2 is not None:
+                total_eta_seconds += m2 * 60 + s2
+
+            # Update the current point to this dropoff
+            current_point = r["destination"]
+
+        # 3️⃣ Finally, add ETA from last dropoff to this ride’s pickup
+        m3, s3 = calculate_route_minutes_seconds(current_point, ride["pickup"])
+        if m3 is not None:
+            total_eta_seconds += m3 * 60 + s3
+
         return {
             "queue_position": position + 1,
             "eta": f"{total_eta_seconds // 60} min {total_eta_seconds % 60} sec",
             "status": "waiting",
-            "driver_location": None
+            "driver_location": current_latlon
         }
-    
+
     elif ride["status"] == "in_car":
         driver_id = ride.get("driver_id")
         if not driver_id:
@@ -96,22 +115,29 @@ def client_status(ride_id: str):
         driver = get_driver_by_id(driver_id)
         if not driver:
             return {"error": "Driver not found"}
-        
-        # Calculate ETA from current driver location to destination
+
         current_pos = {"lat": float(driver.get("lat", 0)), "lon": float(driver.get("lon", 0))}
         m, s = calculate_route_minutes_seconds(current_pos, ride["destination"])
-        
         eta_seconds = (m * 60 + s) if m is not None else 0
-        
+
         return {
             "queue_position": None,
             "eta": f"{eta_seconds // 60} min {eta_seconds % 60} sec",
             "status": "in_car",
-            "driver_location": {"lat": float(driver.get("lat")), "lon": float(driver.get("lon"))},
+            "driver_location": current_pos,
             "driver_id": driver_id
         }
-    
+
+    elif ride["status"] == "completed":
+        return {
+            "status": "completed",
+            "eta": None,
+            "queue_position": None,
+            "driver_location": None
+        }
+
     return {"error": "Ride status unknown"}
+
 
 @app.websocket("/ws/ride/{ride_id}")
 async def websocket_ride_updates(websocket: WebSocket, ride_id: str):
@@ -123,7 +149,6 @@ async def websocket_ride_updates(websocket: WebSocket, ride_id: str):
     
     try:
         while True:
-            # Keep connection alive and listen for client disconnect
             await websocket.receive_text()
     except Exception as e:
         active_connections[ride_id].discard(websocket)
@@ -169,6 +194,19 @@ def driver_view(driver_id: str):
 
 @app.post("/complete_ride/{ride_id}")
 def complete_ride(ride_id: str):
+    ride = get_ride_by_id(ride_id)
+    if ride and ride.get("driver_id"):
+        driver = get_driver_by_id(ride["driver_id"])
+        if driver:
+            # Set driver as available again
+            update_driver_location(
+                ride["driver_id"],
+                float(driver.get("lat", 0)),
+                float(driver.get("lon", 0)),
+                available=True,
+                current_ride_id=None
+            )
+    
     update_ride_status(ride_id, "completed")
     return {"status": "ride completed"}
 

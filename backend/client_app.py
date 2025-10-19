@@ -3,8 +3,8 @@ import requests
 import time
 import bedrock as br
 
-API_URL = "http://localhost:5001"
-WS_URL = "ws://localhost:5001"
+API_URL = "http://10.18.189.186:5001"
+WS_URL = "ws://10.18.189.186:5001"
 
 st.set_page_config(page_title="Campus Escort", layout="centered")
 st.markdown("""
