@@ -78,11 +78,11 @@ if not st.session_state.ride_requested:
         # pickup = user_pickup["location"]
         # destination = user_destination["location"]
 
-        geolocator = Photon(user_agent="campus-pickup")
+        geolocator = Nominatim(user_agent="campus-pickup")
         if user_destination is not None and user_pickup is not None:
-            destination_address = str(geolocator.geocode(f"{destination}, Seattle, WA", exactly_one=True))
-            pickup_address = geolocator.geocode(f"{pickup}, Seattle, WA", exactly_one=True)
-            
+            destination_address = str(geolocator.geocode(f"{destination}, Seattle, WA", exactly_one=True), timeout=10)
+            pickup_address = str(geolocator.geocode(f"{pickup}, Seattle, WA", exactly_one=True), timeout=10)
+
             # st.write(str(pickup_address))
             # destination = db.geocode(user_destination)
             # pickup = db.geocode(user_pickup)
@@ -158,7 +158,7 @@ else:
             if status["status"] == "waiting":
                 st.warning(f"⏳ Waiting for driver assignment")
                 st.write(f"**Queue Position:** {status['queue_position']}")
-                # st.write(f"**Estimated Wait:** {status['eta']}")
+                st.write(f"**Estimated Wait:** {status['eta']}")
                 
                 # Auto-refresh every 3 seconds
                 placeholder = st.empty()
@@ -191,20 +191,12 @@ else:
                 # Auto-refresh every 2 seconds for live updates
                 placeholder = st.empty()
                 with placeholder.container():
-                    st.info("Live tracking active... refreshing in 5 seconds")
-                # # Cancel ride button
-                # if st.button("Cancel Ride Request"):
-                #     st.session_state.ride_requested = False
-                #     st.session_state.confirmed = False
-                #     st.warning("Ride request cancelled")
-                #     time.sleep(1)
-                #     st.rerun()                       
+                    st.info("Live tracking active... refreshing in 5 seconds")                      
                 time.sleep(5)
                 st.rerun()
             
             elif status["status"] == "completed":
                 st.success("✅ Ride completed! Thanks for using Campus Escort.")
-            
             else:
                 st.info(f"Status: {status['status']}")
     else:
