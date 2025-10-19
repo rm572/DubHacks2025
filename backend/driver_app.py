@@ -3,7 +3,7 @@ import requests
 import time
 import streamlit.components.v1 as components
 
-API_URL = "http://127.0.0.1:8000"
+API_URL = "http://10.18.189.186:5001"
 
 
 def get_browser_location():
